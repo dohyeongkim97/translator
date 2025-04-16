@@ -142,6 +142,7 @@ def translate_full_text_with_progress(full_text, target_lang="한국어", model=
 
 def main():
     root = tk.Tk()
+    root.withdraw()
     root.title('PDF Translator')
     # API 키 설정 (환경변수 또는 사용자 입력)
     set_api_key(master = root)
@@ -152,13 +153,14 @@ def main():
         messagebox.showerror("오류", "PDF 파일이 선택되지 않았습니다.", parent=root)
         root.destroy()
         return
+
     detect_words = get_scholar_keywords(master=root)
     if detect_words:
         print("입력된 학자 키워드:", detect_words)
     else:
         print("학자 키워드가 입력되지 않았습니다. 해당 검출 기능은 건너뜁니다.")
     
-    # PDF 텍스트 추출
+    # PDF 텍스트 추출 (detect_words를 함께 전달)
     full_text, tags, file_basename = extract_text_from_pdf(pdf_file, detect_words, master=root)
     if full_text is None:
         messagebox.showerror("오류", "텍스트 추출에 실패했습니다.", parent=root)
@@ -185,16 +187,21 @@ def main():
         return
     print("모델:", chosen_model)
 
+    # # 토큰 수 계산 및 비용 예측, 그리고 사용 모델 선택
     # chosen_model = ask_model_choice(tokens)
     
-    translated_text = translate_full_text_with_progress(full_text, target_lang="한국어", model=chosen_model, master=root)
+    translated_text = translate_full_text_with_progress(
+        full_text, 
+        target_lang="한국어", 
+        model=chosen_model, 
+        master=root
+        )
     translated_text_file = f"{file_basename}_translated.txt"
     with open(translated_text_file, "w", encoding="utf-8") as f:
         f.write(translated_text)
     print(f"번역 완료: {translated_text_file}")
     
     messagebox.showinfo("완료", f"번역이 완료되었습니다!\n파일: {translated_text_file}", parent=root)
-    root.mainloop()
     root.destroy()
 
 if __name__ == "__main__":
