@@ -74,6 +74,12 @@ def reposition_page_markers(text: str) -> str:
     
     return result
 
+def is_detected_phrase(phrase: str, detect_words: list) -> bool:
+    for sub in detect_words:
+        if (sub in phrase) and (len(phrase) <= len(sub) + 5):
+            return True
+    return False
+
 def extract_additional_keywords(text: str, start: int = 1, end: int = 4) -> list:
     full_text = ''
     for i in range(len(text)):
@@ -96,6 +102,10 @@ def extractor(doc, name, detect_words):
         combined += detect_words
     detect_words = list(dict.fromkeys(combined))
 
+    detect_words = [re.sub(r'[^\w\s]', '', w).strip() for w in detect_words]
+
+    print(detect_words)
+
     new_txt = ''
     tags    = ''
     for text_num in range(len(doc)):
@@ -106,11 +116,13 @@ def extractor(doc, name, detect_words):
         temp_tags = ''
         for phrase in doc[text_num].get_text().split('\n'):
             phrase_detect = re.sub(r'[^\w\s]', '', phrase)
-            if (text_num == 0) and ('1. ' in phrase):
+            if (text_num == 0) and (('1. ' in phrase) or (any(phrase_detect.startswith(w.strip()) for w in detect_words))):
                 appearance = 1
                 temp_tags += phrase + ' \n'
             # 학자 관련 조건 또는 파일 이름과 일치하는 경우
-            elif ((text_num % 2 == 0) and (name in phrase_detect)) or any(sub in phrase for sub in detect_words):
+            # elif ((text_num % 2 == 0) and (name in phrase_detect) and (len(name)+5>len(phrase))) or any(sub in phrase for sub in detect_words):
+            elif ((text_num % 2 == 0) and (name in phrase_detect) and (len(name)+5 > len(phrase))) \
+     or is_detected_phrase(phrase, detect_words):
                 appearance = 1
                 temp_tags += phrase + ' \n'
             elif appearance == 1:
@@ -182,6 +194,7 @@ def extract_text_from_pdf(file_path, detect_words = '', master=None):
     new_txt, tags = extractor(doc, filename_wo_ext, detect_words)
     doc.close()
     return new_txt, tags, filename_wo_ext
+
 
 if __name__ == "__main__":
     file_path = select_pdf_file()
