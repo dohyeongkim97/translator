@@ -7,16 +7,6 @@ from translator import translate_full_text, set_api_key, robust_translate_text_s
 import tiktoken
 import re
 
-# def count_tokens(text: str, encoding_name: str = 'cl100k_base') -> int:
-#     encoding = tiktoken.get_encoding(encoding_name)
-#     tokens = encoding.encode(text)
-#     return len(tokens)
-
-# def count_tokens_gpt2(text: str, model_name: str = 'gpt2') -> int:
-#     encoding = tiktoken.get_encoding(encoding_name)
-#     tokens = encoding.encode(text)
-#     return len(tokens)
-
 def count_tokens(text: str, model_name: str = "gpt-3.5-turbo") -> int:
     encoding = tiktoken.encoding_for_model(model_name)
     tokens = encoding.encode(text)
@@ -74,52 +64,10 @@ def split_into_pages(text: str) -> list:
     pages = re.split(r"\[page \d+\]", text)
     return [page.strip() for page in pages if page.strip()]
 
-# def translate_full_text_with_progress(full_text, target_lang="한국어", model="gpt-3.5-turbo", master=None):
-#     pages = split_into_pages(full_text)
-#     total = len(pages)
-#     translated_pages = [""] * total
-
-#     prog_win = tk.Toplevel(master)
-#     prog_win.title("번역 진행 중")
-#     prog_win.resizable(False, False)
-#     label = tk.Label(prog_win, text=f"번역 진행: 0 / {total}")
-#     label.pack(padx=10, pady=5)
-#     progress_bar = ttk.Progressbar(prog_win, orient="horizontal", length=300, mode="determinate", maximum=total)
-#     progress_bar.pack(padx=10, pady=5)
-
-#     def translate_next_page(index):
-#         if index >= total:
-#             prog_win.destroy()
-#             return
-
-#         page = pages[index].strip()
-#         if page:
-#             try:
-#                 result = robust_translate_text_segment(page, target_lang=target_lang, model=model)
-#             except Exception as e:
-#                 result = f"오류 발생: {e}"
-#         else:
-#             result = ""
-#         translated_pages[index] = result
-#         label.config(text=f"번역 진행: {index+1} / {total}")
-#         progress_bar.step(1)
-#         prog_win.after(100, lambda: translate_next_page(index+1))
-
-#     prog_win.after(100, lambda: translate_next_page(0))
-#     prog_win.wait_window()
-
-#     return "\n\n".join(translated_pages)
-
 
 def translate_full_text_with_progress(full_text, target_lang="한국어", model="gpt-3.5-turbo", master=None):
-    """
-    전체 텍스트를 [page N] 마커 단위로 분리하여,
-    마커는 보존하고 본문만 번역한 뒤 진행 바와 함께 반환합니다.
-    """
-    # 1) 페이지 마커([page N]) 패턴
     page_marker_re = re.compile(r'(\[page\s*\d+\])', re.IGNORECASE)
 
-    # 2) 마커 기준으로 분할하면서 각 블록(pages) 생성
     parts = page_marker_re.split(full_text)
     pages = []
     current_marker = ""
@@ -151,7 +99,6 @@ def translate_full_text_with_progress(full_text, target_lang="한국어", model=
                                    maximum=total)
     progress_bar.pack(padx=10, pady=5)
 
-    # 4) 페이지별 번역 함수
     def translate_next_page(index):
         if index >= total:
             prog_win.destroy()
@@ -185,11 +132,11 @@ def translate_full_text_with_progress(full_text, target_lang="한국어", model=
         progress_bar.step(1)
         prog_win.after(100, lambda: translate_next_page(index+1))
 
-    # 5) 첫 호출
+    #  호출
     prog_win.after(100, lambda: translate_next_page(0))
     prog_win.wait_window()
 
-    # 6) 결과 합치기
+    # 합치기
     return "\n\n".join(translated_pages)
 
 
@@ -211,7 +158,7 @@ def main():
     else:
         print("학자 키워드가 입력되지 않았습니다. 해당 검출 기능은 건너뜁니다.")
     
-    # PDF 텍스트 추출 (detect_words를 함께 전달)
+    # PDF 텍스트 추출
     full_text, tags, file_basename = extract_text_from_pdf(pdf_file, detect_words, master=root)
     if full_text is None:
         messagebox.showerror("오류", "텍스트 추출에 실패했습니다.", parent=root)
@@ -238,7 +185,6 @@ def main():
         return
     print("모델:", chosen_model)
 
-    # # 토큰 수 계산 및 비용 예측, 그리고 사용 모델 선택
     # chosen_model = ask_model_choice(tokens)
     
     translated_text = translate_full_text_with_progress(full_text, target_lang="한국어", model=chosen_model, master=root)
