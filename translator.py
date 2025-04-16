@@ -54,7 +54,6 @@ def translate_full_text(full_text, target_lang="한국어", model="gpt-3.5-turbo
     
     return "\n\n".join(translated_segments)
 
-
 def set_api_key(master = None):
     api_key = os.getenv("OPENAI_API_KEY")
     if not api_key:
