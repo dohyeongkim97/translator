@@ -5,20 +5,6 @@ import tkinter as tk
 from tkinter import simpledialog
 import re
 
-# def translate_text_segment(segment, target_lang="en", model = 'gpt-3.5-turbo'):
-#     prompt = f"다음 텍스트를 {target_lang}로 번역해줘:\n\n{segment}"
-#     response = openai.ChatCompletion.create(
-#         model=model,  
-#         messages=[
-#             {"role": "system", "content": "너는 뛰어난 번역가이자 언어 전문가야."},
-#             {"role": "user", "content": prompt}
-#         ],
-#         temperature=0,
-#         max_tokens=1024  # 필요에 따라 조정
-#     )
-#     translation = response['choices'][0]['message']['content'].strip()
-#     return translation
-
 def robust_translate_text_segment(segment, target_lang="한국어", model="gpt-3.5-turbo", max_retries=5, theme = '정치학', style = 'formal'):
     if style == "formal":
         style_instruction = "번역할 때 존댓말(합니다체)로 번역해줘."
@@ -68,44 +54,8 @@ def translate_full_text(full_text, target_lang="한국어", model="gpt-3.5-turbo
     
     return "\n\n".join(translated_segments)
 
-# def translate_full_text(full_text, target_lang="en", model="gpt-3.5-turbo"):
-#     """
-#     전체 텍스트를 "\n\n" 단위로 분할하여 각 조각별로 번역한 후 합쳐서 반환합니다.
-#     """
-#     segments = full_text.split("\n\n")
-#     translated_segments = []
-    
-#     for idx, segment in enumerate(segments, 1):
-#         segment = segment.strip()
-#         if segment:
-#             print(f"번역 중: 섹션 {idx}")
-#             translated = translate_text_segment(segment, target_lang=target_lang, model=model)
-#             translated_segments.append(translated)
-    
-#     return "\n\n".join(translated_segments)
-
-# def translate_full_text(full_text, target_lang="en", model="gpt-3.5-turbo"):
-#     """
-#     전체 텍스트를 "\n\n" 단위로 분할하여 각 조각별로 번역한 후 합쳐서 반환합니다.
-#     """
-#     segments = full_text.split("\n\n")
-#     translated_segments = []
-    
-#     for idx, segment in enumerate(segments, 1):
-#         segment = segment.strip()
-#         if segment:
-#             print(f"번역 중: 섹션 {idx}")
-#             translated = translate_text_segment(segment, target_lang=target_lang, model=model)
-#             translated_segments.append(translated)
-    
-#     return "\n\n".join(translated_segments)
-
-
 
 def set_api_key(master = None):
-    """
-    환경변수 OPENAI_API_KEY를 사용하거나, 직접 사용자 입력을 받아 API 키를 설정.
-    """
     api_key = os.getenv("OPENAI_API_KEY")
     if not api_key:
         root = tk.Tk()
