@@ -1,9 +1,117 @@
 import fitz  # PyMuPDF
 import tkinter as tk
-from tkinter import filedialog, simpledialog
+from tkinter import filedialog, simpledialog, messagebox
 import os
 import re
 from collections import Counter
+
+# def extractor(doc, name):
+#     new_txt = ''
+#     tags = ''
+#     detect_words = ['International Security ', 'Foreign Affairs', 'Henry E. Hale is', 'Michael McFaul is', \
+#                     'Victor D. Cha is', 'Eric Heginbotham is ']
+#     for text_num in range(len(doc)):
+#         appearance = 0
+#         new_txt += f'[page {text_num+1}]'
+#         tags += f'[page {text_num+1}]'
+#         temp_txt = ''
+#         temp_tags = ''
+#         for phrase in doc[text_num].get_text().split('\n'):
+#             if (text_num == 0) and ('1. ' in phrase):
+#                 appearance = 1
+#                 temp_tags += phrase + ' \n'
+#             # 그 외 조건들
+#             elif (phrase == name) or any(sub in phrase for sub in detect_words):
+#                 appearance = 1
+#                 temp_tags += phrase + ' \n'
+#             elif appearance == 1:
+#                 temp_tags += phrase + ' \n'
+#             else:
+#                 temp_txt += phrase + ' \n'
+
+#         # 텍스트 후처리
+#         temp_txt = re.sub(r'\.(\d+)', '.', temp_txt)
+#         temp_txt = temp_txt.replace('- \n', '').replace('.\n', '마침표') \
+#                            .replace('. \n', '마침표').replace('\n\n', '|space|').replace('\n', '') 
+#         temp_txt = temp_txt.replace('마침표', '.\n').replace('|space|', '\n\n')
+
+#         temp_tags = temp_tags.replace('- \n', '').replace('.\n', '마침표') \
+#                              .replace('. \n', '마침표').replace('\n\n', '|space|').replace('\n', '')
+#         temp_tags = temp_tags.replace('마침표', '.\n').replace('|space|', '\n\n')
+
+#         new_txt += temp_txt + '\n\n'
+#         tags += temp_tags + '\n\n'
+
+#     return new_txt, tags
+# def reposition_page_markers(text: str) -> str:
+
+#     parts = re.split(r"(\n\n\[page \d+\])", text)
+#     if len(parts) <= 1:
+#         return text
+
+#     new_parts = [parts[0]]
+#     for i in range(1, len(parts), 2):
+#         marker = parts[i]           # 예: "\n\n[page 3]"
+#         content = parts[i+1] if (i+1) < len(parts) else ""
+#         content = content.lstrip()   # 앞쪽 여백 제거
+
+#         prev_text = new_parts[-1]
+#         dot_index = prev_text.rfind(".")
+#         if dot_index != -1:
+#             prev_text = prev_text[:dot_index+1] + marker + " " + prev_text[dot_index+1:]
+#             new_parts[-1] = prev_text
+#         else:
+#             new_parts[-1] = new_parts[-1].rstrip() + marker
+#         new_parts.append(content)
+#     return "".join(new_parts)
+
+
+# def reposition_page_markers(text: str) -> str:
+#     ignored_abbr = ["U.S.A.", "e.g.", "i.e."]
+    
+#     def find_valid_period(s: str) -> int:
+#         """
+#         s 문자열에서 약어에 포함되지 않은 가장 마지막 '.'의 인덱스를 반환합니다.
+#         약어에 포함된 점은 무시합니다.
+#         """
+#         pos = len(s)
+#         while True:
+#             pos = s.rfind('.', 0, pos)
+#             if pos == -1:
+#                 return -1
+#             # 현재 pos가 포함된 약어가 있는지 체크
+#             is_ignored = False
+#             for abbr in ignored_abbr:
+#                 start = pos - len(abbr) + 1  # 약어 전체 길이를 고려
+#                 if start >= 0 and s[start: pos+1] == abbr:
+#                     is_ignored = True
+#                     break
+#             if is_ignored:
+#                 pos -= 1  # 약어에 속하는 점이면, 그 앞쪽부터 다시 검색
+#                 continue
+#             return pos
+
+#     parts = re.split(r"(\n\n\[page \d+\])", text)
+#     if len(parts) <= 1:
+#         return text
+
+#     new_parts = [parts[0]]
+#     for i in range(1, len(parts), 2):
+#         marker = parts[i]  # 예: "\n\n[page 3]"
+#         content = parts[i+1] if (i+1) < len(parts) else ""
+#         content = content.lstrip()   # 앞쪽 공백 제거
+
+#         prev_text = new_parts[-1]
+#         dot_index = find_valid_period(prev_text)
+#         if dot_index != -1:
+#             # 마지막 유효한 '.' 바로 뒤에 페이지 마커를 추가
+#             prev_text = prev_text[:dot_index+1] + marker + " " + prev_text[dot_index+1:]
+#             new_parts[-1] = prev_text
+#         else:
+#             new_parts[-1] = new_parts[-1].rstrip() + marker
+#         new_parts.append(content)
+#     return "".join(new_parts)
+
 
 def detect_names_from_first_page(text: str) -> list:
     pattern = re.compile(
@@ -159,11 +267,6 @@ def select_pdf_file(master = None):
     return file_path
 
 def get_scholar_keywords(master = None):
-    """
-    GUI 입력 대화상자를 통해 학자 키워드를 입력받습니다.
-    여러 키워드는 쉼표로 구분하여 입력합니다.
-    입력이 없으면 빈 리스트를 반환합니다.
-    """
     if master is None:
         root = tk.Tk()
         root.withdraw()
@@ -180,6 +283,34 @@ def get_scholar_keywords(master = None):
         detect_words = []
     return detect_words
 
+
+def splitter(new_txt, root=None):
+    print("▶ splitter() 호출됨")
+
+    if '\n' not in new_txt.split('\n\n')[0]:
+        print('problem_found')
+        location = 7
+        temp_str = ''
+        while True:
+            if new_txt.split('\n\n')[1][location] == '.':
+                temp_text = new_txt[:len(new_txt.split('\n\n')[0])] + new_txt[(len(new_txt.split('\n\n')[0]) + location):]
+                break
+            else:
+                location += 1
+                temp_str += new_txt.split('\n\n')[1][location]
+        
+        if (new_txt.split('\n\n')[0][-1] != ' ') and (temp_str[0] != ' '):
+            temp_str = ' '+temp_str
+        new_txt_temp = new_txt[:len(new_txt.split('\n\n')[0])] + temp_str + '\n\n' \
+             + '[page 2]' + new_txt[len(new_txt.split('\n\n')[0])+len(temp_str)*2-4-1:]
+    else:
+        print('no_problem')
+        return new_txt
+
+    messagebox.showinfo("Splitter 호출됨. \n파일: {translated_text_file}", parent=root)
+    return new_txt_temp
+
+
 def extract_text_from_pdf(file_path, detect_words = '', master=None):
     """
     PDF 파일을 열고, 파일 이름(확장자 제외)을 기준으로 extractor를 실행하여
@@ -192,8 +323,10 @@ def extract_text_from_pdf(file_path, detect_words = '', master=None):
     filename_wo_ext = os.path.splitext(os.path.basename(file_path))[0]
     doc = fitz.open(file_path)
     new_txt, tags = extractor(doc, filename_wo_ext, detect_words)
+    new_txt = splitter(new_txt)
     doc.close()
     return new_txt, tags, filename_wo_ext
+
 
 
 if __name__ == "__main__":
