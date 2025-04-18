@@ -112,7 +112,6 @@ from collections import Counter
 #         new_parts.append(content)
 #     return "".join(new_parts)
 
-
 def detect_names_from_first_page(text: str) -> list:
     pattern = re.compile(
         r'\b'                                 # 단어 경계
@@ -141,7 +140,11 @@ def reposition_page_markers(text: str) -> str:
     ignored_abbrs = {
         "U.S.A.": "PLACEHOLDER_USA",
         "e.g.": "PLACEHOLDER_EG",
-        "i.e.": "PLACEHOLDER_IE"
+        "i.e.": "PLACEHOLDER_IE",
+        "...": "IDKWHYTHISISHERETHOUGH", 
+        ". . .": "ANDTHISTOOWHYISTHISHERE?",
+        "II.": "세계대전기호",
+        "U.S.": "PLACEHOLDER_US", 
     }
     
     # 약어 치환
@@ -150,6 +153,7 @@ def reposition_page_markers(text: str) -> str:
     
     # 페이지 구분자를 기준 분할
     parts = re.split(r"(\n\n\[page \d+\])", text)
+ 
     if len(parts) <= 1:
         for abbr, placeholder in ignored_abbrs.items():
             text = text.replace(placeholder, abbr)
@@ -175,9 +179,19 @@ def reposition_page_markers(text: str) -> str:
         new_parts.append(content)
     
     result = "".join(new_parts)
+
+    
     
     # 3단계: 플레이스홀더 원래 약어로 복원
+    # for abbr, placeholder in ignored_abbrs.items():
+    #     result = result.replace(placeholder, abbr)
+    
+    # return result
+
     for abbr, placeholder in ignored_abbrs.items():
+        # placeholder 가 '' 면 스킵
+        if placeholder == '':
+            continue
         result = result.replace(placeholder, abbr)
     
     return result
@@ -196,7 +210,9 @@ def extract_additional_keywords(text: str, start: int = 1, end: int = 4) -> list
     data = Counter(full_text.split('\n')).most_common()[start:end]    
     return [item[0] for item in data]
 
-def extractor(doc, name, detect_words):
+def extractor(doc, name, detect_words = None):
+    if detect_words == None:
+        detect_words = []
     default_detect_words = ['International Security ', 'Foreign Affairs', 'Henry E. Hale is', 
                             'Michael McFaul is', 'Victor D. Cha is', 'Eric Heginbotham is ']
     default_detect_words += extract_additional_keywords(doc)
@@ -247,6 +263,7 @@ def extractor(doc, name, detect_words):
         temp_tags = temp_tags.replace('마침표', '.\n').replace('|space|', '\n\n')
         new_txt += temp_txt + '\n\n'
         tags += temp_tags + '\n\n'
+        
     new_txt = reposition_page_markers(new_txt)
     return new_txt, tags
 
@@ -284,7 +301,7 @@ def get_scholar_keywords(master = None):
     return detect_words
 
 
-def splitter(new_txt, root=None):
+def splitter(new_txt):
     print("▶ splitter() 호출됨")
 
     if '\n' not in new_txt.split('\n\n')[0]:
@@ -302,16 +319,13 @@ def splitter(new_txt, root=None):
         if (new_txt.split('\n\n')[0][-1] != ' ') and (temp_str[0] != ' '):
             temp_str = ' '+temp_str
         new_txt_temp = new_txt[:len(new_txt.split('\n\n')[0])] + temp_str + '\n\n' \
-             + '[page 2]' + new_txt[len(new_txt.split('\n\n')[0])+len(temp_str)*2-4-1:]
+             + '[page 2]' + new_txt[len(new_txt.split('\n\n')[0])+len(temp_str)+9:]
     else:
         print('no_problem')
         return new_txt
-
-    messagebox.showinfo("Splitter 호출됨. \n파일: {translated_text_file}", parent=root)
     return new_txt_temp
 
-
-def extract_text_from_pdf(file_path, detect_words = '', master=None):
+def extract_text_from_pdf(file_path, detect_words = None, master=None):
     """
     PDF 파일을 열고, 파일 이름(확장자 제외)을 기준으로 extractor를 실행하여
     텍스트와 태그 데이터를 반환.
@@ -326,8 +340,6 @@ def extract_text_from_pdf(file_path, detect_words = '', master=None):
     new_txt = splitter(new_txt)
     doc.close()
     return new_txt, tags, filename_wo_ext
-
-
 
 if __name__ == "__main__":
     file_path = select_pdf_file()
