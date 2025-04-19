@@ -21,11 +21,11 @@ import re
 
 def robust_translate_text_segment(segment, target_lang="한국어", model="gpt-3.5-turbo", max_retries=5, theme = '정치학', style = 'formal'):
     if style == "formal":
-        style_instruction = "번역할 때 존댓말(합니다체)로 번역해줘."
+        style_instruction = "존댓말로 번역해줘."
     else:
-        style_instruction = "번역할 때 반말(해체체)로 번역해줘."
+        style_instruction = "반말(해체체)로 번역해줘."
     
-    prompt = f"다음 텍스트를 {target_lang}로 이전 번역을 고려해서 번역해줘:\n\n{segment}"
+    prompt = f"다음 텍스트를 {target_lang}로 이전 번역을 고려해서 {style_instruction}:\n\n{segment}"
     for attempt in range(max_retries):
         try:
             response = openai.ChatCompletion.create(
@@ -41,7 +41,7 @@ def robust_translate_text_segment(segment, target_lang="한국어", model="gpt-3
                     {"role": "user", "content": prompt}
                 ],
                 temperature=0,
-                max_tokens=1024
+                max_tokens=2048
             )
             return response.choices[0].message.content.strip()
         
