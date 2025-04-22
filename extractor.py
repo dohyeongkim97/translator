@@ -133,7 +133,52 @@ def detect_names_from_first_page(text: str) -> list:
     # 아무것도 없으면 빈 리스트, 있으면 첫 번째만
     return result[:1]
 
+def shifter(new_txt):
+    
+    text_lists = new_txt.split('\n\n')
+    
+    for i in range(1, len(text_lists)):
+    
+        ignored_abbrs = {
+            "U.S.A.": "PLACEHOLDER_USA",
+            "e.g.": "PLACEHOLDER_EG",
+            "i.e.": "PLACEHOLDER_IE",
+            "...": "IDKWHYTHISISHERETHOUGH", 
+            ". . .": "ANDTHISTOOWHYISTHISHERE?",
+            "II.": "세계대전기호",
+            "U.S.": "PLACEHOLDER_US",
+        }
+    
+        for abbr, placeholder in ignored_abbrs.items():
+            text_lists[i] = text_lists[i].replace(abbr, placeholder)
         
+        if text_lists[i-1][-1] != '.':
+            pattern = re.compile(r'\[page \d+\]')
+            m = pattern.search(text_lists[i])
+            prefix = text_lists[i][:m.start()]  
+            marker = m.group() 
+            suffix = text_lists[i][m.end():] 
+    
+            text_lists[i] = re.sub(pattern, '', text_lists[i])
+    
+            dot_idx = text_lists[i].find('.')
+    
+            text_lists[i-1] += ' ' + text_lists[i][:dot_idx+1]
+            text_lists[i] = f'[page {i+1}]' + text_lists[i][dot_idx+1:]
+    
+            # for abbr, placeholder in ignored_abbrs.items():
+            # # placeholder 가 '' 면 스킵
+            #     if placeholder == '':
+            #         continue
+
+    target_txt = '\n\n'.join(text_lists)
+    
+    for abbr, placeholder in ignored_abbrs.items():
+        target_txt = target_txt.replace(placeholder, abbr)
+
+    return target_txt
+
+    
 def reposition_page_markers(text: str) -> str:
     # 치환할 약어와 플레이스홀더
     # 차후에 개발 목표에 따라 추가 및 변동 가능.
@@ -144,7 +189,7 @@ def reposition_page_markers(text: str) -> str:
         "...": "IDKWHYTHISISHERETHOUGH", 
         ". . .": "ANDTHISTOOWHYISTHISHERE?",
         "II.": "세계대전기호",
-        "U.S.": "PLACEHOLDER_US", 
+        "U.S.": "PLACEHOLDER_US",
     }
     
     # 약어 치환
@@ -180,18 +225,7 @@ def reposition_page_markers(text: str) -> str:
     
     result = "".join(new_parts)
 
-    
-    
-    # 3단계: 플레이스홀더 원래 약어로 복원
-    # for abbr, placeholder in ignored_abbrs.items():
-    #     result = result.replace(placeholder, abbr)
-    
-    # return result
-
     for abbr, placeholder in ignored_abbrs.items():
-        # placeholder 가 '' 면 스킵
-        if placeholder == '':
-            continue
         result = result.replace(placeholder, abbr)
     
     return result
@@ -261,10 +295,20 @@ def extractor(doc, name, detect_words = None):
         temp_tags = temp_tags.replace('- \n', '').replace('.\n', '마침표') \
                              .replace('. \n', '마침표').replace('\n\n', '|space|').replace('\n', '')
         temp_tags = temp_tags.replace('마침표', '.\n').replace('|space|', '\n\n')
+        
         new_txt += temp_txt + '\n\n'
         tags += temp_tags + '\n\n'
-        
+    
     new_txt = reposition_page_markers(new_txt)
+
+    new_txts = new_txt.split('\n\n')
+
+    for i in range(len(new_txts)):
+        if new_txts[i].startswith('\n'):
+            new_txts[i] = new_txts[i][1:]
+
+    new_txt = '\n\n'.join(new_txts)
+    
     return new_txt, tags
 
 def select_pdf_file(master = None):
@@ -338,6 +382,7 @@ def extract_text_from_pdf(file_path, detect_words = None, master=None):
     doc = fitz.open(file_path)
     new_txt, tags = extractor(doc, filename_wo_ext, detect_words)
     new_txt = splitter(new_txt)
+    new_txt = shifter(new_txt)
     doc.close()
     return new_txt, tags, filename_wo_ext
 
